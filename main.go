@@ -25,8 +25,6 @@ type Job struct {
 
 func handler(w http.ResponseWriter, r *http.Request) {
 
-	// "db_connection": "host=localhost port=5432 dbname=mydatabase user=myuser password=mypassword",
-
 	connStr := "postgres://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable"
 
 	db, err := sql.Open("postgres", connStr)
