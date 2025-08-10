@@ -15,8 +15,12 @@ type Person struct {
 	Age  int    `json:"age"`
 }
 
-type User struct {
-	transaction_time string
+type Job struct {
+	TransactionTime string `json:"transaction_time"`
+	TransactionID   string `json:"transaction_id"`
+	JobID           int64  `json:"job_id"`
+	JobName         string `json:"job_name"`
+	Duration        *int32 `json:"duration"`
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -43,22 +47,28 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("PostgreSQL version:", version)
 
-	var u User
-	err = db.QueryRow(`SELECT transaction_time FROM jobs`).Scan(&u.transaction_time)
+	rows, err := db.Query(`SELECT transaction_time, transaction_id, job_id, job_name, duration FROM jobs`)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("transaction time:", u.transaction_time)
 
-	p := Person{Name: "Alice", Age: 30}
+	var jobs []Job
+	for rows.Next() {
+		var u Job
+		err := rows.Scan(&u.TransactionTime, &u.TransactionID, &u.JobID, &u.JobName, &u.Duration)
+		if err != nil {
+			log.Fatal(err)
+		}
+		jobs = append(jobs, u)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	jsonData, err := json.Marshal(p)
+	jsonData, err := json.MarshalIndent(jobs, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Fprintf(w, string(jsonData))
+	fmt.Fprintf(w, "%s", string(jsonData))
 }
 
 func main() {
