@@ -10,11 +10,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Person struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
-
 type Job struct {
 	TransactionTime string `json:"transaction_time"`
 	TransactionID   string `json:"transaction_id"`
