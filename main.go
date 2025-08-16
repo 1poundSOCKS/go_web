@@ -38,7 +38,7 @@ func main() {
 
 func handlerRoot(w http.ResponseWriter, r *http.Request) {
 
-	data, err := getPostgresData()
+	text, err := getPostgresData()
 
 	w.Header().Set("Content-Type", "text/html")
 
@@ -62,9 +62,9 @@ func handlerRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "  </select>")
 	fmt.Fprintf(w, "	  <h2>Output</h2>")
 	if err != nil {
-		fmt.Fprintf(w, "  <pre id=\"output\">"+err.Error()+"</pre>")
+		fmt.Fprintf(w, "  <pre id=\"output\">"+text+": "+err.Error()+"</pre>")
 	} else {
-		fmt.Fprintf(w, "  <pre id=\"output\">"+data+"</pre>")
+		fmt.Fprintf(w, "  <pre id=\"output\">"+text+"</pre>")
 	}
 	fmt.Fprintf(w, "</body>")
 	fmt.Fprintf(w, "</html>")
