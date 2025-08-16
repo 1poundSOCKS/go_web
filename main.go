@@ -38,6 +38,8 @@ func main() {
 
 func handlerRoot(w http.ResponseWriter, r *http.Request) {
 
+	data := getPostgresData()
+
 	w.Header().Set("Content-Type", "text/html")
 
 	fmt.Fprintf(w, "<!doctype html>")
@@ -58,54 +60,17 @@ func handlerRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "    <option value=\"option3\">Option 3</option>")
 	fmt.Fprintf(w, "    <option value=\"option4\">Option 4</option>")
 	fmt.Fprintf(w, "  </select>")
+	fmt.Fprintf(w, "	  <h2>Output</h2>")
+	fmt.Fprintf(w, "  <pre id=\"output\">"+data+"</pre>")
 	fmt.Fprintf(w, "</body>")
 	fmt.Fprintf(w, "</html>")
 }
 
 func handlerPostgres(w http.ResponseWriter, r *http.Request) {
 
-	connStr := "postgres://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-
-	if err != nil {
-		log.Fatal("Error opening connection: ", err)
-	}
-	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		log.Fatal("Cannot connect to database: ", err)
-	}
-
-	var version string
-	err = db.QueryRow("SELECT version()").Scan(&version)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("PostgreSQL version:", version)
-
-	rows, err := db.Query(`SELECT transaction_time, transaction_id, job_id, job_name, duration FROM jobs`)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var jobs []JobPostgres
-	for rows.Next() {
-		var u JobPostgres
-		err := rows.Scan(&u.TransactionTime, &u.TransactionID, &u.JobID, &u.JobName, &u.Duration)
-		if err != nil {
-			log.Fatal(err)
-		}
-		jobs = append(jobs, u)
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	jsonData, err := json.MarshalIndent(jobs, "", "  ")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Fprintf(w, "%s", string(jsonData))
+	data := getPostgresData()
+	fmt.Fprintf(w, "%s", data)
 }
 
 func handlerOracle(w http.ResponseWriter, r *http.Request) {
@@ -145,4 +110,48 @@ func handlerOracle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "%s", string(jsonData))
+}
+
+func getPostgresData() string {
+	connStr := "postgres://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+
+	if err != nil {
+		return "Error opening connection: " + err.Error()
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		return "Cannot connect to database: " + err.Error()
+	}
+
+	var version string
+	err = db.QueryRow("SELECT version()").Scan(&version)
+	if err != nil {
+		return err.Error()
+	}
+	fmt.Println("PostgreSQL version:", version)
+
+	rows, err := db.Query(`SELECT transaction_time, transaction_id, job_id, job_name, duration FROM jobs`)
+	if err != nil {
+		return err.Error()
+	}
+
+	var jobs []JobPostgres
+	for rows.Next() {
+		var u JobPostgres
+		err := rows.Scan(&u.TransactionTime, &u.TransactionID, &u.JobID, &u.JobName, &u.Duration)
+		if err != nil {
+			log.Fatal(err)
+		}
+		jobs = append(jobs, u)
+	}
+
+	jsonData, err := json.MarshalIndent(jobs, "", "  ")
+	if err != nil {
+		return err.Error()
+	}
+
+	return string(jsonData)
 }
