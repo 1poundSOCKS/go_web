@@ -38,7 +38,7 @@ func main() {
 
 func handlerRoot(w http.ResponseWriter, r *http.Request) {
 
-	data := getPostgresData()
+	data, err := getPostgresData()
 
 	w.Header().Set("Content-Type", "text/html")
 
@@ -61,7 +61,11 @@ func handlerRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "    <option value=\"option4\">Option 4</option>")
 	fmt.Fprintf(w, "  </select>")
 	fmt.Fprintf(w, "	  <h2>Output</h2>")
-	fmt.Fprintf(w, "  <pre id=\"output\">"+data+"</pre>")
+	if err != nil {
+		fmt.Fprintf(w, "  <pre id=\"output\">"+err.Error()+"</pre>")
+	} else {
+		fmt.Fprintf(w, "  <pre id=\"output\">"+data+"</pre>")
+	}
 	fmt.Fprintf(w, "</body>")
 	fmt.Fprintf(w, "</html>")
 }
@@ -69,8 +73,12 @@ func handlerRoot(w http.ResponseWriter, r *http.Request) {
 func handlerPostgres(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
-	data := getPostgresData()
-	fmt.Fprintf(w, "%s", data)
+	text, err := getPostgresData()
+	if err != nil {
+		fmt.Fprintf(w, "%s: %s", text, err.Error())
+	} else {
+		fmt.Fprintf(w, "%s", text)
+	}
 }
 
 func handlerOracle(w http.ResponseWriter, r *http.Request) {
@@ -112,30 +120,30 @@ func handlerOracle(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", string(jsonData))
 }
 
-func getPostgresData() string {
+func getPostgresData() (string, error) {
 	connStr := "postgres://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 
 	if err != nil {
-		return "Error opening connection: " + err.Error()
+		return "Error opening connection", err
 	}
 	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
-		return "Cannot connect to database: " + err.Error()
+		return "Cannot connect to database: ", err
 	}
 
 	var version string
 	err = db.QueryRow("SELECT version()").Scan(&version)
 	if err != nil {
-		return err.Error()
+		return "error on SELECT", err
 	}
 	fmt.Println("PostgreSQL version:", version)
 
 	rows, err := db.Query(`SELECT transaction_time, transaction_id, job_id, job_name, duration FROM jobs`)
 	if err != nil {
-		return err.Error()
+		return "error on SELECT", err
 	}
 
 	var jobs []JobPostgres
@@ -143,15 +151,15 @@ func getPostgresData() string {
 		var u JobPostgres
 		err := rows.Scan(&u.TransactionTime, &u.TransactionID, &u.JobID, &u.JobName, &u.Duration)
 		if err != nil {
-			log.Fatal(err)
+			return "error on Scan", err
 		}
 		jobs = append(jobs, u)
 	}
 
 	jsonData, err := json.MarshalIndent(jobs, "", "  ")
 	if err != nil {
-		return err.Error()
+		return "Error on Marshal", err
 	}
 
-	return string(jsonData)
+	return string(jsonData), nil
 }
