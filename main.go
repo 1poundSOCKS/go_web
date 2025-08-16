@@ -23,6 +23,45 @@ type JobOracle struct {
 	JobRef string `json:"job_ref"`
 }
 
+func main() {
+
+	http.HandleFunc("/", handlerRoot)
+	http.HandleFunc("/oracle", handlerOracle)
+	http.HandleFunc("/postgres", handlerPostgres)
+
+	port := ":8080"
+	log.Println("Starting server on", port)
+	if err := http.ListenAndServe(port, nil); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func handlerRoot(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "text/html")
+
+	fmt.Fprintf(w, "<!doctype html>")
+	fmt.Fprintf(w, "<html lang=\"en\">")
+	fmt.Fprintf(w, "<head>")
+	fmt.Fprintf(w, "  <meta charset=\"utf-8\" />")
+	fmt.Fprintf(w, "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />")
+	fmt.Fprintf(w, "  <title>Minimal HTML Page</title>")
+	fmt.Fprintf(w, "</head>")
+	fmt.Fprintf(w, "<body>")
+	fmt.Fprintf(w, "  <h1>Hello, world!</h1>")
+	fmt.Fprintf(w, "  <p>This is a minimal HTML page.</p>")
+	fmt.Fprintf(w, "  <h1>Dropdown List Example</h1>")
+	fmt.Fprintf(w, "  <label for=\"options\">Choose an option:</label>")
+	fmt.Fprintf(w, "  <select id=\"options\" name=\"options\">")
+	fmt.Fprintf(w, "    <option value=\"option1\">Option 1</option>")
+	fmt.Fprintf(w, "    <option value=\"option2\">Option 2</option>")
+	fmt.Fprintf(w, "    <option value=\"option3\">Option 3</option>")
+	fmt.Fprintf(w, "    <option value=\"option4\">Option 4</option>")
+	fmt.Fprintf(w, "  </select>")
+	fmt.Fprintf(w, "</body>")
+	fmt.Fprintf(w, "</html>")
+}
+
 func handlerPostgres(w http.ResponseWriter, r *http.Request) {
 
 	connStr := "postgres://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable"
@@ -106,16 +145,4 @@ func handlerOracle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "%s", string(jsonData))
-}
-
-func main() {
-
-	http.HandleFunc("/oracle", handlerOracle)
-	http.HandleFunc("/postgres", handlerPostgres)
-
-	port := ":8080"
-	log.Println("Starting server on", port)
-	if err := http.ListenAndServe(port, nil); err != nil {
-		log.Fatal(err)
-	}
 }
