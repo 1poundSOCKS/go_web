@@ -11,18 +11,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type JobPostgres struct {
-	TransactionTime string `json:"transaction_time"`
-	TransactionID   string `json:"transaction_id"`
-	JobID           int64  `json:"job_id"`
-	JobName         string `json:"job_name"`
-	Duration        *int32 `json:"duration"`
-}
-
-type JobOracle struct {
-	JobRef string `json:"job_ref"`
-}
-
 func main() {
 
 	http.HandleFunc("/", handlerRoot)
@@ -96,31 +84,20 @@ func handlerOracle(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Cannot connect to database: ", err)
 	}
 
-	rows, err := db.Query("SELECT job_ref FROM SP111")
+	rows, err := db.Query("SELECT * FROM SP111_JOBS")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var jobs []JobOracle
-	for rows.Next() {
-		var u JobOracle
-		err := rows.Scan(&u.JobRef)
-		if err != nil {
-			log.Fatal(err)
-		}
-		jobs = append(jobs, u)
-	}
+	data := convertToJson(rows)
 
 	w.Header().Set("Content-Type", "application/json")
-	jsonData, err := json.MarshalIndent(jobs, "", "  ")
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	fmt.Fprintf(w, "%s", string(jsonData))
+	fmt.Fprintf(w, "%s", data)
 }
 
 func getPostgresData() (string, error) {
+
 	connStr := "postgres://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 
@@ -141,25 +118,54 @@ func getPostgresData() (string, error) {
 	}
 	fmt.Println("PostgreSQL version:", version)
 
-	rows, err := db.Query(`SELECT transaction_time, transaction_id, job_id, job_name, duration FROM jobs`)
+	rows, err := db.Query(`SELECT * FROM jobs`)
 	if err != nil {
 		return "error on SELECT", err
 	}
 
-	var jobs []JobPostgres
+	results := convertToJson(rows)
+
+	return results, nil
+}
+
+func convertToJson(rows *sql.Rows) string {
+
+	// Slice of maps to hold rows
+	var results []map[string]interface{}
+
+	cols, _ := rows.Columns()
 	for rows.Next() {
-		var u JobPostgres
-		err := rows.Scan(&u.TransactionTime, &u.TransactionID, &u.JobID, &u.JobName, &u.Duration)
-		if err != nil {
-			return "error on Scan", err
+		// Make a slice for the values
+		vals := make([]interface{}, len(cols))
+		valPtrs := make([]interface{}, len(cols))
+		for i := range vals {
+			valPtrs[i] = &vals[i]
 		}
-		jobs = append(jobs, u)
+
+		// Scan the result into the pointers
+		rows.Scan(valPtrs...)
+
+		// Create a map for the row
+		rowMap := make(map[string]interface{})
+		for i, col := range cols {
+			var v interface{}
+			b, ok := vals[i].([]byte)
+			if ok {
+				v = string(b)
+			} else {
+				v = vals[i]
+			}
+			rowMap[col] = v
+		}
+
+		results = append(results, rowMap)
 	}
 
-	jsonData, err := json.MarshalIndent(jobs, "", "  ")
+	// Convert to JSON
+	data, err := json.MarshalIndent(results, "", "  ")
 	if err != nil {
-		return "Error on Marshal", err
+		panic(err)
 	}
 
-	return string(jsonData), nil
+	return string(data)
 }
