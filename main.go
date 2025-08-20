@@ -162,7 +162,7 @@ func convertToJson(rows *sql.Rows) string {
 			name := cols[i]
 			value := vals[i]
 
-			jsonStr := fmt.Sprintf("    {\"%s\":,\"%s\"}", name, value)
+			jsonStr := fmt.Sprintf("    {\"%s\":,\"%v\"}", name, value)
 
 			if i == len(cols)-1 {
 				jsonStr += "\n"
