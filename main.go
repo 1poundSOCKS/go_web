@@ -56,6 +56,11 @@ func handlerRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "    <option value=\"option3\">Option 3</option>")
 	fmt.Fprintf(w, "    <option value=\"option4\">Option 4</option>")
 	fmt.Fprintf(w, "  </select>")
+	fmt.Fprintf(w, "	<form>")
+	fmt.Fprintf(w, "	    <label for=\"username\">Name:</label>")
+	fmt.Fprintf(w, "    <input type=\"text\" id=\"username\" name=\"username\" placeholder=\"Enter your name\">")
+	fmt.Fprintf(w, "    <button type=\"submit\">Submit Form</button>")
+	fmt.Fprintf(w, "  </form>")
 	fmt.Fprintf(w, "	  <h2>Output</h2>")
 	if err != nil {
 		fmt.Fprintf(w, "  <pre id=\"output\">"+text+": "+err.Error()+"</pre>")
