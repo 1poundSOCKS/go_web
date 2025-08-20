@@ -138,124 +138,49 @@ func getPostgresData() (string, error) {
 
 func convertToJson(rows *sql.Rows) string {
 
-	// Slice of maps to hold rows
-	// var results []map[string]interface{}
-
-	// cols, _ := rows.Columns()
-	// for rows.Next() {
-	// 	// Make a slice for the values
-	// 	vals := make([]interface{}, len(cols))
-	// 	valPtrs := make([]interface{}, len(cols))
-	// 	for i := range vals {
-	// 		valPtrs[i] = &vals[i]
-	// 	}
-
-	// 	// Scan the result into the pointers
-	// 	rows.Scan(valPtrs...)
-
-	// 	// Create a map for the row
-	// 	rowMap := make(map[string]interface{})
-	// 	for i, col := range cols {
-	// 		var v interface{}
-	// 		b, ok := vals[i].([]byte)
-	// 		if ok {
-	// 			v = string(b)
-	// 		} else {
-	// 			v = vals[i]
-	// 		}
-	// 		rowMap[col] = v
-	// 	}
-
-	// 	results = append(results, rowMap)
-	// }
-
-	// recordset := Recordset{}
-
 	data := "[\n"
-	data += "  {\n"
 
 	cols, _ := rows.Columns()
 
-	// fieldData := Field[len(cols)]
-	fieldData := make([]Field, 0, len(cols))
+	rows.Next()
 
-	for col := range cols {
-		field := Field{Name: cols[col], Value: ""}
-		fieldData = append(fieldData, field)
-	}
-
-	// i := 0
-	for rows.Next() {
-
-		// vals := make([]interface{}, len(cols))
-		// valPtrs := make([]interface{}, len(cols))
-		// for i := range vals {
-		// 	valPtrs[i] = &vals[i]
-		// }
-		// record := Record{}
-
-		// Scan the result into the pointers
-		// rows.Scan(record...)
-
-		// Create a map for the row
-		// rowMap := make(map[string]interface{})
-		// for i, col := range cols {
-		// 	var v interface{}
-		// 	b, ok := vals[i].([]byte)
-		// 	if ok {
-		// 		v = string(b)
-		// 	} else {
-		// 		v = vals[i]
-		// 	}
-		// 	rowMap[col] = v
-		// }
-
-		// results = append(results, rowMap)
+	for {
 
 		vals := make([]interface{}, len(cols)) // to hold actual values
 		ptrs := make([]interface{}, len(cols)) // pointers for Scan
+
 		for i := range vals {
 			ptrs[i] = &vals[i]
 		}
 
 		rows.Scan(ptrs...)
 
-		// for field := range fieldData {
-		// 	value := fmt.Sprintf("%v", v)
-		// }
+		data += "  {\n"
 
-		// record := Record{"name": cols[0], "value": "test"}
+		for i := 0; i < len(cols); i++ {
 
-		// name := ptrs[i]
-		// fieldData[i].Value = vals[i]
+			name := cols[i]
+			value := vals[i]
 
-		// jsonStr := fmt.Sprintf(`{"name":%s,"value":%s"}`, name, value)
-		// data += jsonStr
+			jsonStr := fmt.Sprintf("    {\"%s\":,\"%s\"}", name, value)
 
-		// rows.
+			if i == len(cols)-1 {
+				jsonStr += "\n"
+			} else {
+				jsonStr += ",\n"
+			}
+			data += jsonStr
+		}
 
-		// recordset = append(recordset, record)
-		// i++
+		if rows.Next() {
+			data += "  },\n"
+		} else {
+			data += "  }\n"
+			break
+		}
 	}
 
-	data += "  }\n"
 	data += "]"
-
-	// Convert to JSON
-	// data, err := json.MarshalIndent(results, "", "  ")
-	// data, err := json.MarshalIndent(recordset, "", "  ")
-	// data, err := json.Marshal(recordset)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// return string(data)
-
-	// [
-	// {
-	//   "name": "transaction_time",
-	//   "value": "test"
-	// },
 
 	return data
 }
